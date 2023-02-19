@@ -1,0 +1,3 @@
+[submodule "submodules/3DHumanGeneration"]
+	path = submodules/3DHumanGeneration
+	url = https://github.com/roberthoenig/3DHumanGeneration

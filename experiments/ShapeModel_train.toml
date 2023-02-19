@@ -1,0 +1,24 @@
+type = "train"
+seed = 123456
+device = "cpu"
+model = "ShapeModel"
+dataset = "DFAUST"
+
+[dataset_args]
+latent_shapes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res.npy"
+silhouettes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res_silhouettes.npy"
+
+[training]
+batch_sz = 2
+n_epochs = 5000
+epochs_per_checkpoint = 1
+
+[ConditionalModel]
+in_sz = 63
+cond_sz = 64
+n_steps = 100
+load_checkpoint = "/home/robert/g/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/cond_model_const_cond_4000.pt"
+cond_model = "EmbedImageCNN"
+
+[ConditionalModel.cond_model_args]
+freeze = true
