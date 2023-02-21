@@ -120,7 +120,7 @@ def dump(obj):
   for attr in dir(obj):
     print("obj.%s = %r" % (attr, getattr(obj, attr)))
 
-def noise_estimation_loss(model, x_0, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps, device, cond):
+def noise_estimation_loss(model, x_0, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, n_steps, device, cond, idx):
     batch_size = x_0.shape[0]
     # Select a random step for each example
     t = torch.randint(0, n_steps, size=(batch_size // 2 + 1,))
@@ -132,7 +132,7 @@ def noise_estimation_loss(model, x_0, alphas_bar_sqrt, one_minus_alphas_bar_sqrt
     e = torch.randn_like(x_0)
     # model input
     x = x_0 * a + e * am1
-    output = model(x, t, cond=cond)
+    output = model(x, t, cond=cond, idx=idx)
     return (e - output).square().mean()
 
 def parallel_to_cpu_state_dict(state_dict):

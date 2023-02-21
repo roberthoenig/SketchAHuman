@@ -14,7 +14,7 @@ from models.ConditionalModel import ConditionalModel
 
         
 from plyfile import PlyData
-from utils.diffusion_utils import make_beta_schedule, p_sample_loop, ply_to_png
+from utils.diffusion_utils import make_beta_schedule, noise_estimation_loss, p_sample_loop, ply_to_png
 # from submodels.3DHumanGeneration.Models import graphAE
 import importlib
 Param = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.utils.graphAE_param")
@@ -88,7 +88,8 @@ class ShapeModel():
         self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"], 
                                  in_sz=self.config["ConditionalModel"]["in_sz"],
                                  cond_sz=self.config["ConditionalModel"]["cond_sz"],
-                                 cond_model=cond_model)
+                                 cond_model=cond_model,
+                                 do_cached_lookup=self.config["ConditionalModel"]["do_cached_lookup"])
         if "load_checkpoint" in self.config["ConditionalModel"].keys():
             self.load_model(self.config["ConditionalModel"]["load_checkpoint"])          
         self.model = self.model.to(self.device)
@@ -100,7 +101,7 @@ class ShapeModel():
             for batch in dataloader:
                 batch_x = batch['x'].to(self.device)
                 cond_x = batch['cond'].float().to(self.device)
-                loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x)
+                loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x, idx=batch['idx'])
                 self.optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.)
@@ -135,7 +136,8 @@ class ShapeModel():
         self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"], 
                                  in_sz=self.config["ConditionalModel"]["in_sz"],
                                  cond_sz=self.config["ConditionalModel"]["cond_sz"],
-                                 cond_model=cond_model)
+                                 cond_model=cond_model,
+                                 do_cached_lookup=False)
         if "load_checkpoint" in self.config["ConditionalModel"].keys():
             self.load_model(self.config["ConditionalModel"]["load_checkpoint"])          
         self.model = self.model.to(self.device)

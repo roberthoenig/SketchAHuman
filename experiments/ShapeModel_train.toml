@@ -9,7 +9,7 @@ latent_shapes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res.npy"
 silhouettes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res_silhouettes.npy"
 
 [training]
-batch_sz = 2
+batch_sz = 64
 n_epochs = 5000
 epochs_per_checkpoint = 1
 
@@ -17,8 +17,9 @@ epochs_per_checkpoint = 1
 in_sz = 63
 cond_sz = 64
 n_steps = 100
-load_checkpoint = "/home/robert/g/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/cond_model_const_cond_4000.pt"
+load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_train/018/checkpoint_1_.pt"
 cond_model = "EmbedImageCNN"
+do_cached_lookup = true
 
 [ConditionalModel.cond_model_args]
 freeze = true

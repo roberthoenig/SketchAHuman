@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch
 import torchvision
+import time
 
 
 class ConditionalLinear(nn.Module):
@@ -21,18 +22,39 @@ class ConditionalLinear(nn.Module):
 
 
 class ConditionalModel(nn.Module):
-    def __init__(self, n_steps, in_sz, cond_sz, cond_model):
+    def __init__(self, n_steps, in_sz, cond_sz, cond_model, do_cached_lookup):
         super(ConditionalModel, self).__init__()
         self.cond_model = cond_model
         self.lin1 = ConditionalLinear(in_sz+cond_sz, 128, n_steps)
         self.lin2 = ConditionalLinear(128, 128, n_steps)
         self.lin3 = ConditionalLinear(128, 128, n_steps)
         self.lin4 = nn.Linear(128, in_sz)
+        self.cache = dict()
+        self.idx_stores = set()
+        self.do_cached_lookup = do_cached_lookup
 
-    def forward(self, x, y, cond):
-        cond_processed = self.cond_model(cond)
+    def cached_lookup(self, cond, idx):
+        all_present = True
+        for i in idx:
+            if not i in self.idx_stores:
+                all_present = False
+                break
+        if all_present == False:
+            cond_out = self.cond_model(cond)
+            for p, i in enumerate(idx):
+                self.cache[i] = cond_out[p]
+                self.idx_stores.add(i)
+        cond_out = torch.stack([self.cache[i] for i in idx], dim=0)
+        return cond_out            
+
+    def forward(self, x, y, cond, idx=None):
+        if self.do_cached_lookup:
+            cond_processed = self.cached_lookup(cond, [i.item() for i in idx])
+        else:
+            cond_processed = self.cond_model(cond)
         x = torch.cat([x, cond_processed], dim=-1)
         x = F.softplus(self.lin1(x, y))
         x = F.softplus(self.lin2(x, y))
         x = F.softplus(self.lin3(x, y))
-        return self.lin4(x)
+        x = self.lin4(x)
+        return x

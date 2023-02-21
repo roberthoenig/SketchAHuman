@@ -25,5 +25,6 @@ class DFAUST(Dataset):
 
     def __getitem__(self, idx):
         sample = {'x': self.latent_shapes[idx],
-                  'cond': self.silhouettes[idx]}
+                  'cond': self.silhouettes[idx],
+                  'idx': idx}
         return sample
