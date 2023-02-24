@@ -4,6 +4,7 @@ import logging
 import pprint
 
 from models.ShapeModel import ShapeModel
+from models.ShapeModelNoDiffusion import ShapeModelNoDiffusion
 from utils.experiment_utils import init_logger, prep_experiment_dir, load_experiment_config, init_seeds
 
 def main() -> None:
@@ -28,6 +29,8 @@ Run an experiment.
 
     if config["model"] == "ShapeModel":
         model = ShapeModel(config)
+    elif config["model"] == "ShapeModelNoDiffusion":
+        model = ShapeModelNoDiffusion(config)
     else:
         raise Exception(f"Unknown model {config['model']}")
     logging.info("Training model...")
