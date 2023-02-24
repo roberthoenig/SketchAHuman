@@ -5,9 +5,12 @@ import torch
 import torchvision
 
 class EmbedImageCNN(nn.Module):
-    def __init__(self, cond_sz, freeze):
+    def __init__(self, cond_sz, freeze_model, freeze_newlayers):
         super(EmbedImageCNN, self).__init__()
         self.model = torchvision.models.squeezenet1_1(pretrained=True)
+        if freeze_model:
+            for param in self.model.parameters():
+                param.requires_grad = False
         self.model.features[0] = torch.nn.Conv2d(1, 64, kernel_size=(7,7), stride=(2,2))
         self.model.classifier = torch.nn.Sequential(
             torch.nn.AvgPool2d(13, 13),
@@ -22,9 +25,11 @@ class EmbedImageCNN(nn.Module):
         if torch.cuda.device_count() > 1:
             print("Let's use", torch.cuda.device_count(), "GPUs!")
             self.model = torch.nn.DataParallel(self.model)
-        if freeze:
-            for param in self.model.parameters():
-                param.requires_grad = False
+        if freeze_newlayers:
+            newlayers = [self.model[2].features[0], self.model[2].classifier]
+            for layer in newlayers:
+                for param in layer.parameters():
+                    param.requires_grad = False
 
     def forward(self, cond):
         out = self.model(cond)

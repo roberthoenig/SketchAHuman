@@ -22,4 +22,5 @@ cond_model = "EmbedImageCNN"
 do_cached_lookup = true
 
 [ConditionalModel.cond_model_args]
-freeze = true
+freeze_model = true
+freeze_newlayers = true

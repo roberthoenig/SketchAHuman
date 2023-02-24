@@ -21,4 +21,5 @@ load_checkpoint = "experiments/ShapeModel_train/018/checkpoint_1_.pt"
 cond_model = "EmbedImageCNN"
 
 [ConditionalModel.cond_model_args]
-freeze = true
+freeze_model = true
+freeze_newlayers = true
