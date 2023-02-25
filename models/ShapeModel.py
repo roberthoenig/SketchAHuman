@@ -75,8 +75,10 @@ class ShapeModel():
 
         # Dataset
         if self.config["dataset"] == "DFAUST":
-            dataset = DFAUST(**self.config["dataset_args"])
+            dataset = DFAUST(**self.config["dataset_args"], type='train')
             dataloader = DataLoader(dataset, batch_size=self.config["training"]["batch_sz"], shuffle=True, num_workers=0)
+            dataset_eval = DFAUST(**self.config["dataset_args"], type='test')
+            dataloader_eval = DataLoader(dataset_eval, batch_size=1, shuffle=False, num_workers=0)
         else:
             raise Exception(f'Unkown dataset {self.config["dataset"]}')
 
@@ -97,6 +99,7 @@ class ShapeModel():
         self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
         for t in pbar:
+            # Train
             losses = []
             for batch in dataloader:
                 batch_x = batch['x'].to(self.device)
@@ -108,8 +111,17 @@ class ShapeModel():
                 self.optimizer.step()
                 losses.append(loss.detach().item())
             batch_loss = np.array(losses).mean()
-            pbar.set_postfix({'batch_loss': batch_loss})
-            logging.info(f"Epoch {self.epoch}, average loss: {batch_loss}")
+            # Eval
+            losses_eval = []
+            for batch in dataloader_eval:
+                batch_x = batch['x'].to(self.device)
+                cond_x = batch['cond'].float().to(self.device)
+                with torch.no_grad():
+                    loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x, idx=batch['idx'])
+                losses_eval.append(loss.detach().item())
+            eval_loss = np.array(losses_eval).mean()
+            pbar.set_postfix({'batch_loss': batch_loss, 'eval_loss': eval_loss})
+            logging.info(f"Epoch {self.epoch}, average loss: {batch_loss}, average eval loss: {eval_loss}")
             if (t+1) % self.config["training"]["epochs_per_checkpoint"] == 0:
                 logging.info(f"Saving checkpoint.")
                 self.save_model()
