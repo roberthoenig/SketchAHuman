@@ -19,7 +19,7 @@ epochs_per_checkpoint = 200
 in_sz = 63
 cond_sz = 64
 n_steps = 100
-load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_train/018/checkpoint_1_.pt"
+# load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_train/018/checkpoint_1_.pt"
 cond_model = "EmbedImageCNN"
 do_cached_lookup = true
 
