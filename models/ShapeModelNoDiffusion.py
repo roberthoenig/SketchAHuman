@@ -78,7 +78,6 @@ class ShapeModelNoDiffusion():
             # Train
             losses = []
             for batch in dataloader:
-                print("b")
                 batch_x = batch['x'].to(self.device)
                 cond_x = batch['cond'].float().to(self.device)
                 y = self.model(cond_x)

@@ -12,8 +12,8 @@ train_test_ratio = 0.9
 
 [training]
 batch_sz = 64
-n_epochs = 10
-epochs_per_checkpoint = 2
+n_epochs = 2000
+epochs_per_checkpoint = 100
 
 [Model]
 name = "EmbedImageCNN"
@@ -21,5 +21,5 @@ name = "EmbedImageCNN"
 
 [Model.args]
 cond_sz = 63
-freeze_model = true
+freeze_model = false
 freeze_newlayers = false
