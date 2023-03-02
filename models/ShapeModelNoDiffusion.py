@@ -2,18 +2,15 @@ import numpy as np
 from datasets.DFAUST import DFAUST
 from datasets.Silhouettes import Silhouettes
 import torch
-import torchvision
 import torch.optim as optim
-import itertools
 import logging
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from models.EmbedImageCNN import EmbedImageCNN
-from models.ConditionalModel import ConditionalModel
 
 from plyfile import PlyData
-from utils.diffusion_utils import make_beta_schedule, noise_estimation_loss, p_sample_loop, ply_to_png
+from utils.diffusion_utils import ply_to_png
 # from submodels.3DHumanGeneration.Models import graphAE
 import importlib
 
@@ -23,7 +20,7 @@ graphAE_dataloader = importlib.import_module("submodules.3DHumanGeneration.code.
 from PIL import Image
 
 
-class ShapeModel():
+class ShapeModelNoDiffusion():
     def __init__(self, config):
         self.config = config
         self.epoch = 1
@@ -51,28 +48,10 @@ class ShapeModel():
             deparalleled_state_dict[new_k] = state_dict[k]
         return deparalleled_state_dict
 
-    def process_state_keys(self, state_dict):
-        deparalleled_state_dict = {}
-        for k in state_dict.keys():
-            s = "cond_model"
-            new_k = k
-            if k.startswith(s) and not k.startswith(s + ".model"):
-                new_k = "cond_model.model" + k[len(s):]
-            deparalleled_state_dict[new_k] = state_dict[k]
-        return deparalleled_state_dict
-
     def load_model(self, path):
-        self.model.load_state_dict(
-            self.process_state_keys(self.parallel_to_cpu_state_dict(torch.load(path)['model_state_dict'])))
+        self.model.load_state_dict(self.parallel_to_cpu_state_dict(torch.load(path)['model_state_dict']))
 
     def train(self):
-        betas = make_beta_schedule(schedule='sigmoid',
-                                   n_timesteps=self.config["ConditionalModel"]["n_steps"], start=1e-5, end=1e-2)
-        alphas = 1 - betas
-        alphas_prod = torch.cumprod(alphas, dim=0)
-        alphas_bar_sqrt = torch.sqrt(alphas_prod).to(self.device)
-        one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod).to(self.device)
-
         # Dataset
         if self.config["dataset"] == "DFAUST":
             dataset = DFAUST(**self.config["dataset_args"], type='train')
@@ -82,33 +61,27 @@ class ShapeModel():
             dataloader_eval = DataLoader(dataset_eval, batch_size=1, shuffle=False, num_workers=0)
         else:
             raise Exception(f'Unkown dataset {self.config["dataset"]}')
-
+        print("Dataset loaded")
         # Model
-        if self.config["ConditionalModel"]["cond_model"] == "EmbedImageCNN":
-            cond_model = EmbedImageCNN(self.config["ConditionalModel"]["cond_sz"],
-                                       **self.config["ConditionalModel"]["cond_model_args"])
+        if self.config["Model"]["name"] == "EmbedImageCNN":
+            self.model = EmbedImageCNN(**self.config["Model"]["args"])
         else:
-            raise Exception(f'Unkown condition model {self.config["ConditionalModel"]["cond_model"]}')
-        self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"],
-                                      in_sz=self.config["ConditionalModel"]["in_sz"],
-                                      cond_sz=self.config["ConditionalModel"]["cond_sz"],
-                                      cond_model=cond_model,
-                                      do_cached_lookup=self.config["ConditionalModel"]["do_cached_lookup"])
-        if "load_checkpoint" in self.config["ConditionalModel"].keys():
-            self.load_model(self.config["ConditionalModel"]["load_checkpoint"])
+            raise Exception(f'Unkown condition model {self.config["Model"]["name"]}')
+        if "load_checkpoint" in self.config["Model"].keys():
+            self.load_model(self.config["Model"]["load_checkpoint"])
         self.model = self.model.to(self.device)
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-4)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
+        loss_fn = torch.nn.MSELoss()
         for t in pbar:
             # Train
             losses = []
             for batch in dataloader:
                 batch_x = batch['x'].to(self.device)
                 cond_x = batch['cond'].float().to(self.device)
-                loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt,
-                                             self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x,
-                                             idx=batch['idx'])
+                y = self.model(cond_x)
+                loss = loss_fn(batch_x, y)
                 self.optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.)
@@ -121,11 +94,11 @@ class ShapeModel():
                 batch_x = batch['x'].to(self.device)
                 cond_x = batch['cond'].float().to(self.device)
                 with torch.no_grad():
-                    loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt,
-                                                 self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x,
-                                                 idx=batch['idx'])
+                    y = self.model(cond_x)
+                    loss = loss_fn(batch_x, y)
                 losses_eval.append(loss.detach().item())
             eval_loss = np.array(losses_eval).mean()
+            # Log
             pbar.set_postfix({'batch_loss': batch_loss, 'eval_loss': eval_loss})
             logging.info(f"Epoch {self.epoch}, average loss: {batch_loss}, average eval loss: {eval_loss}")
             if (t + 1) % self.config["training"]["epochs_per_checkpoint"] == 0:
@@ -134,12 +107,6 @@ class ShapeModel():
             self.epoch += 1
 
     def test(self):
-        betas = make_beta_schedule(schedule='sigmoid', n_timesteps=self.config["ConditionalModel"]["n_steps"],
-                                   start=1e-5, end=1e-2)
-        alphas = 1 - betas
-        alphas_prod = torch.cumprod(alphas, dim=0)
-        one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod)
-
         # Dataset
         if self.config["dataset"] == "Silhouettes":
             dataset = Silhouettes(**self.config["dataset_args"])
@@ -148,18 +115,12 @@ class ShapeModel():
             raise Exception(f'Unkown dataset {self.config["dataset"]}')
 
         # Model
-        if self.config["ConditionalModel"]["cond_model"] == "EmbedImageCNN":
-            cond_model = EmbedImageCNN(self.config["ConditionalModel"]["cond_sz"],
-                                       **self.config["ConditionalModel"]["cond_model_args"])
+        if self.config["Model"]["name"] == "EmbedImageCNN":
+            self.model = EmbedImageCNN(**self.config["Model"]["args"])
         else:
-            raise Exception(f'Unkown condition model {self.config["ConditionalModel"]["cond_model"]}')
-        self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"],
-                                      in_sz=self.config["ConditionalModel"]["in_sz"],
-                                      cond_sz=self.config["ConditionalModel"]["cond_sz"],
-                                      cond_model=cond_model,
-                                      do_cached_lookup=False)
-        if "load_checkpoint" in self.config["ConditionalModel"].keys():
-            self.load_model(self.config["ConditionalModel"]["load_checkpoint"])
+            raise Exception(f'Unkown condition model {self.config["Model"]["name"]}')
+        if "load_checkpoint" in self.config["Model"].keys():
+            self.load_model(self.config["Model"]["load_checkpoint"])
         self.model = self.model.to(self.device)
         self.model.eval()
 
@@ -177,9 +138,8 @@ class ShapeModel():
         template_plydata = PlyData.read(param_mesh.template_ply_fn)
 
         for batch in dataloader:
-            assert self.config["ConditionalModel"]["in_sz"] == 153
-            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 153], alphas,
-                                   one_minus_alphas_bar_sqrt, betas, batch['cond'])
+            print("batch.keys", batch.keys())
+            sample = self.model(batch['cond'])
             sample = np.concatenate([s.detach().numpy() for s in sample])
             sample = sample.reshape(-1, 17, 9)
 

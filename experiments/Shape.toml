@@ -1,27 +1,25 @@
 type = "train"
 seed = 123456
 device = "cpu"
-model = "ShapeModel"
+model = "ShapeModelNoDiffusion"
 dataset = "DFAUST"
 
 [dataset_args]
 latent_shapes_path = "../../../scratch/fpaesde/data/AMASS/test_res_amass.npy"
 silhouettes_path = "../../../scratch/fpaesde/data/AMASS/test_res_silhouettes.npy"
-train_test_ratio = 0.9
 n_samples = -1
+train_test_ratio = 0.9
 
 [training]
 batch_sz = 64
-n_epochs = 5000
-epochs_per_checkpoint = 200
+n_epochs = 10
+epochs_per_checkpoint = 2
 
-[ConditionalModel]
-in_sz = 153
-cond_sz = 64
-n_steps = 100
-cond_model = "EmbedImageCNN"
-do_cached_lookup = true
+[Model]
+name = "EmbedImageCNN"
+# load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_no_diffusion_train/019/checkpoint_5_.pt"
 
-[ConditionalModel.cond_model_args]
+[Model.args]
+cond_sz = 153
 freeze_model = true
-freeze_newlayers = true
+freeze_newlayers = false
