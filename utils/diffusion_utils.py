@@ -5,6 +5,7 @@ from matplotlib import cm
 from sklearn.datasets import make_swiss_roll
 import torch
 import numpy as np
+import cv2
 import trimesh
 import pyrender
 from PIL import Image
@@ -33,6 +34,24 @@ def ply_to_png(ply_filename, png_filename, silhouette=False):
         color = (255 * (color > 0)).astype(np.uint8)
     img = Image.fromarray(color)
     img.save(png_filename)
+
+def blurr_image(path):
+    img_path = path + ".png"
+    image = cv2.imread(img_path, 0)
+
+    edges = cv2.Sobel(image, cv2.CV_64F, 1, 1)
+    edges = edges.astype(np.uint8)
+
+    ret, thresh = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+    white_only = np.zeros_like(image)
+    white_only[thresh == 255] = 255
+
+    noise = cv2.GaussianBlur(white_only, (11, 11), 0)
+    result = cv2.add(edges, noise, dtype=cv2.CV_64F)
+
+    save_path = path + "blurred.png"
+    cv2.imwrite(save_path, result)
+
 
 
 
