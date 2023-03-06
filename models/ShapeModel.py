@@ -98,7 +98,7 @@ class ShapeModel():
             self.load_model(self.config["ConditionalModel"]["load_checkpoint"])
         self.model = self.model.to(self.device)
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=1e-4)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=1e-3)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
         for t in pbar:
             # Train
@@ -177,12 +177,11 @@ class ShapeModel():
         template_plydata = PlyData.read(param_mesh.template_ply_fn)
 
         for batch in dataloader:
-            assert self.config["ConditionalModel"]["in_sz"] == 153
-            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 153], alphas,
+            assert self.config["ConditionalModel"]["in_sz"] == 63
+            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 63], alphas,
                                    one_minus_alphas_bar_sqrt, betas, batch['cond'])
             sample = np.concatenate([s.detach().numpy() for s in sample])
-            sample = sample.reshape(-1, 17, 9)
-
+            sample = sample.reshape(-1, 7, 9)
             sample_torch = torch.FloatTensor(sample).cuda()
 
             mesh = sample_torch[-1]

@@ -11,6 +11,7 @@ class ConditionalLinear(nn.Module):
         super(ConditionalLinear, self).__init__()
         self.num_out = num_out
         self.lin = nn.Linear(num_in, num_out)
+        self.relu = nn.ReLU()
         self.embed = nn.Embedding(n_steps, num_out)
         self.embed.weight.data.uniform_()
 
@@ -25,10 +26,10 @@ class ConditionalModel(nn.Module):
     def __init__(self, n_steps, in_sz, cond_sz, cond_model, do_cached_lookup):
         super(ConditionalModel, self).__init__()
         self.cond_model = cond_model
-        self.lin1 = ConditionalLinear(in_sz+cond_sz, 128, n_steps)
-        self.lin2 = ConditionalLinear(128, 128, n_steps)
-        self.lin3 = ConditionalLinear(128, 128, n_steps)
-        self.lin4 = nn.Linear(128, in_sz)
+        self.lin1 = ConditionalLinear(in_sz+cond_sz, 512, n_steps)
+        self.lin2 = ConditionalLinear(512, 1024, n_steps)
+        self.lin3 = ConditionalLinear(1024, 512, n_steps)
+        self.lin4 = nn.Linear(512, in_sz)
         self.cache = dict()
         self.idx_stores = set()
         self.do_cached_lookup = do_cached_lookup

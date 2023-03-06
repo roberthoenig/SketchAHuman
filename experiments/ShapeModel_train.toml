@@ -1,24 +1,24 @@
 type = "train"
 seed = 123456
-device = "cpu"
+device = 'cuda'
 model = "ShapeModel"
 dataset = "DFAUST"
 
 [dataset_args]
-latent_shapes_path = "../../../scratch/fpaesde/data/AMASS/test_res_amass.npy"
-silhouettes_path = "../../../scratch/fpaesde/data/AMASS/test_res_silhouettes.npy"
-train_test_ratio = 0.9
+latent_shapes_path = "../../../scratch/fpaesde/data/AMASS/test_res_agora.npy"
+silhouettes_path = "../../../scratch/fpaesde/data/AMASS/test_res_silhouettes1.npy"
+train_test_ratio = 0.95
 n_samples = -1
 
 [training]
-batch_sz = 64
-n_epochs = 5000
-epochs_per_checkpoint = 200
+batch_sz = 16
+n_epochs = 2000
+epochs_per_checkpoint = 30
 
 [ConditionalModel]
 in_sz = 153
-cond_sz = 64
-n_steps = 100
+cond_sz = 160
+n_steps = 1000
 cond_model = "EmbedImageCNN"
 do_cached_lookup = true
 

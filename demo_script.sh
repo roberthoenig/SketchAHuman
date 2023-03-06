@@ -13,7 +13,7 @@ wait $PID
 scp -r submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/ fpaesde@euler.ethz.ch:SketchAHuman/submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/
 
 # Connect to remote server via ssh and run the command, store the job ID
-job_id=$(ssh fpaesde@euler.ethz.ch "sbatch -G 1 -n 5 --gres=gpumem:20G --time=240 --mem-per-cpu=20G --wrap='python run.py ShapeModel_test'")
+job_id=$(ssh fpaesde@euler.ethz.ch "sbatch -G 1 -n 1 --gres=gpumem:20G --time=20 --mem-per-cpu=16G --wrap='python run.py ShapeModel_test'")
 
 # Extract the job ID from the ssh command output using awk
 job_id=$(echo $job_id | awk '{print $4}')
@@ -27,8 +27,8 @@ do
 done
 
 # Copy the directory back to local machine
-#LAST_DIR=$(ssh fpaesde@euler.ethz.ch "ls -d SketchAHuman/experiments/ShapeModel_test/*/ | tail -n 1")
-#scp -r fpaesde@euler.ethz.ch:$LAST_DIR experiments/
+LAST_DIR=$(ssh fpaesde@euler.ethz.ch "ls -d SketchAHuman/experiments/ShapeModel_test/*/ | tail -n 1")
+scp -r fpaesde@euler.ethz.ch:$LAST_DIR experiments/ShapeModel_test/
 
 #Open in meshlab
 LAST_LOCAL_DIR=$(ls -d experiments/ShapeModel_test/*/ | sort | tail -n 1)

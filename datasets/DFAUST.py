@@ -10,15 +10,20 @@ class DFAUST(Dataset):
         self.silhouettes_path = silhouettes_path
 
         latent_shapes = np.load(self.latent_shapes_path)
-        indices = list(range(0, 10, 32))
+        print(latent_shapes.shape)
+        size = latent_shapes.shape[0]
+        indices = list(range(0, size, 32))
         latent_shapes = latent_shapes[indices, :, :, :]
-        latent_shapes = np.reshape(latent_shapes, (32, 17, 9))
-        latent_shapes = latent_shapes.reshape((32, 153))
-        latent_shapes = latent_shapes*255
+        latent_shapes = np.reshape(latent_shapes, (-1, 17, 9))
+        latent_shapes = latent_shapes.reshape((-1, 153))
+        #Don't ask
+        latent_shapes = np.delete(latent_shapes, 126682, axis=0)
+        print(latent_shapes.shape)
         latent_shapes = torch.Tensor(latent_shapes).float()
         self.latent_shapes = latent_shapes
         silhouettes = np.load(self.silhouettes_path)
-        silhouettes = silhouettes[:32]
+        print(silhouettes.shape)
+        print(self.latent_shapes.shape)
         silhouettes = torch.Tensor(silhouettes).float()
         silhouettes = silhouettes.unsqueeze(1)
         self.silhouettes = silhouettes

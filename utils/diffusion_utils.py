@@ -46,8 +46,10 @@ def blurr_image(path):
     white_only = np.zeros_like(image)
     white_only[thresh == 255] = 255
 
-    noise = cv2.GaussianBlur(white_only, (11, 11), 0)
+    noise = cv2.blur(white_only, (5, 5))
     result = cv2.add(edges, noise, dtype=cv2.CV_64F)
+    scale_factor = np.iinfo(np.uint16).max / np.amax(result)
+    result = np.uint16(result * scale_factor)
 
     save_path = path + "blurred.png"
     cv2.imwrite(save_path, result)
