@@ -8,11 +8,14 @@ import numpy as np
 import cv2
 import trimesh
 import pyrender
+import os
 from PIL import Image
 from os import listdir
 from os.path import isfile, join
 import natsort
 from tqdm import tqdm
+
+os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 
 def ply_to_png(ply_filename, png_filename, silhouette=False):
@@ -29,7 +32,7 @@ def ply_to_png(ply_filename, png_filename, silhouette=False):
                             [ 0,  0,  0,  1]])
     # render scene
     r = pyrender.OffscreenRenderer(512, 512)
-    color, _ = r.render(scene)
+    color, _ = r.render(scene, flags=pyrender.RenderFlags.RGBA)
     if silhouette:
         color = (255 * (color > 0)).astype(np.uint8)
     img = Image.fromarray(color)
@@ -53,6 +56,23 @@ def blurr_image(path):
 
     save_path = path + "blurred.png"
     cv2.imwrite(save_path, result)
+
+
+def blur_image(img):
+    image = cv2.UMat(img)
+    edges = cv2.Sobel(image, cv2.CV_64F, 1, 1)
+    edges = edges.astype(np.uint8)
+
+    ret, thresh = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+    white_only = np.zeros_like(image)
+    white_only[thresh == 255] = 255
+
+    noise = cv2.blur(white_only, (5,5))
+    result = cv2.add(edges, noise, dtype=cv2.CV_64F)
+    scale_factor = np.iinfo(np.uint16).max / np.amax(result)
+
+    result = np.uint16(result * scale_factor)
+    return result
 
 
 

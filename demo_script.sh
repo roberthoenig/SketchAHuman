@@ -10,6 +10,7 @@ PID=$!
 wait $PID
 
 # Copy the directory to remote server
+ssh fpaesde@euler.ethz.ch "rm -r SketchAHuman/submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/"
 scp -r submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/ fpaesde@euler.ethz.ch:SketchAHuman/submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/
 
 # Connect to remote server via ssh and run the command, store the job ID
@@ -22,7 +23,7 @@ job_id=$(echo $job_id | awk '{print $4}')
 ssh fpaesde@euler.ethz.ch "squeue -j $job_id" | awk '{if(NR>1)print $5}' | grep -v "R" > /dev/null
 while [ $? -ne 0 ]
 do
-  sleep 30
+  sleep 120
   ssh fpaesde@euler.ethz.ch "squeue -j $job_id" | awk '{if(NR>1)print $5}' | grep -v "R" > /dev/null
 done
 
@@ -32,4 +33,4 @@ scp -r fpaesde@euler.ethz.ch:$LAST_DIR experiments/ShapeModel_test/
 
 #Open in meshlab
 LAST_LOCAL_DIR=$(ls -d experiments/ShapeModel_test/*/ | sort | tail -n 1)
-meshlab $(ls -t $LAST_LOCAL_DIR/*.ply | head -1)
+meshlab $(ls -t $LAST_LOCAL_DIR/*.png.ply | head -1)

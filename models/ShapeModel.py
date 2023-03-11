@@ -6,6 +6,8 @@ import torchvision
 import torch.optim as optim
 import itertools
 import logging
+import random
+import os
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
@@ -21,6 +23,9 @@ Param = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.utils
 graphAE = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.Models.graphAE")
 graphAE_dataloader = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.DataLoader.graphAE_dataloader")
 from PIL import Image
+
+os.environ['PYOPENGL_PLATFORM'] = 'egl'
+
 
 
 class ShapeModel():
@@ -98,7 +103,8 @@ class ShapeModel():
             self.load_model(self.config["ConditionalModel"]["load_checkpoint"])
         self.model = self.model.to(self.device)
 
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=1e-3)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=5e-5)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
         for t in pbar:
             # Train
@@ -131,6 +137,7 @@ class ShapeModel():
             if (t + 1) % self.config["training"]["epochs_per_checkpoint"] == 0:
                 logging.info(f"Saving checkpoint.")
                 self.save_model()
+            self.scheduler.step()
             self.epoch += 1
 
     def test(self):
@@ -138,6 +145,7 @@ class ShapeModel():
                                    start=1e-5, end=1e-2)
         alphas = 1 - betas
         alphas_prod = torch.cumprod(alphas, dim=0)
+        alphas_bar_sqrt = torch.sqrt(alphas_prod).to(self.device)
         one_minus_alphas_bar_sqrt = torch.sqrt(1 - alphas_prod)
 
         # Dataset
@@ -175,13 +183,11 @@ class ShapeModel():
         mesh_model.init_test_mode()
         mesh_model.eval()
         template_plydata = PlyData.read(param_mesh.template_ply_fn)
-
         for batch in dataloader:
-            assert self.config["ConditionalModel"]["in_sz"] == 63
-            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 63], alphas,
-                                   one_minus_alphas_bar_sqrt, betas, batch['cond'])
+            assert self.config["ConditionalModel"]["in_sz"] == 153
+            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 153], alphas, one_minus_alphas_bar_sqrt, betas, batch['cond'])
             sample = np.concatenate([s.detach().numpy() for s in sample])
-            sample = sample.reshape(-1, 7, 9)
+            sample = sample.reshape(-1, 17, 9)
             sample_torch = torch.FloatTensor(sample).cuda()
 
             mesh = sample_torch[-1]
@@ -189,7 +195,6 @@ class ShapeModel():
             out_mesh = mesh_model.forward_from_layer_n(mesh, 8)
             out_mesh = out_mesh.cpu()
             pc_out = np.array(out_mesh[0].data.tolist())
-            # pc_out[:, 1] += 100
             fname = batch['name'][0]
             graphAE_dataloader.save_pc_into_ply(template_plydata, pc_out,
                                                 str(self.config["experiment_dir"] / (fname + ".ply")))

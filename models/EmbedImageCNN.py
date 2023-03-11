@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch
 import torchvision
-
+from utils.diffusion_utils import blur_image
 class EmbedImageCNN(nn.Module):
     def __init__(self, cond_sz, freeze_model, freeze_newlayers):
         super(EmbedImageCNN, self).__init__()

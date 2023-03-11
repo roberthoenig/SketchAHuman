@@ -1,6 +1,7 @@
 import argparse
 import logging
 import pprint
+import torch
 
 from models.ShapeModel import ShapeModel
 from models.ShapeModelNoDiffusion import ShapeModelNoDiffusion
@@ -20,6 +21,8 @@ def main() -> None:
     config = load_experiment_config(args.experiment)
     experiment_dir = prep_experiment_dir(args.experiment)
     config["experiment_dir"] = experiment_dir
+    if config["device"] == 'gpu':
+        config["device"] = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     init_seeds(config["seed"])
 
