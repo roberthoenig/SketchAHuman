@@ -26,17 +26,10 @@ class ConditionalModel(nn.Module):
     def __init__(self, n_steps, in_sz, cond_sz, cond_model, do_cached_lookup):
         super(ConditionalModel, self).__init__()
         self.cond_model = cond_model
-<<<<<<< HEAD
         self.lin1 = ConditionalLinear(in_sz+cond_sz, 256, n_steps)
         self.lin2 = ConditionalLinear(256, 256, n_steps)
         self.lin3 = ConditionalLinear(256, 256, n_steps)
         self.lin4 = nn.Linear(256, in_sz)
-=======
-        self.lin1 = ConditionalLinear(in_sz+cond_sz, 128, n_steps)
-        self.lin2 = ConditionalLinear(128, 128, n_steps)
-        self.lin3 = ConditionalLinear(128, 128, n_steps)
-        self.lin4 = nn.Linear(128, in_sz)
->>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335
         self.cache = dict()
         self.idx_stores = set()
         self.do_cached_lookup = do_cached_lookup
@@ -53,11 +46,7 @@ class ConditionalModel(nn.Module):
                 self.cache[i] = cond_out[p]
                 self.idx_stores.add(i)
         cond_out = torch.stack([self.cache[i] for i in idx], dim=0)
-<<<<<<< HEAD
         return cond_out
-=======
-        return cond_out            
->>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335
 
     def forward(self, x, y, cond, idx=None):
         if self.do_cached_lookup:
@@ -69,8 +58,4 @@ class ConditionalModel(nn.Module):
         x = F.softplus(self.lin2(x, y))
         x = F.softplus(self.lin3(x, y))
         x = self.lin4(x)
-<<<<<<< HEAD
         return x
-=======
-        return x
->>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335
