@@ -104,11 +104,7 @@ ipython_config.py
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
-<<<<<<< HEAD
 *.xml
 *.iml
-=======
-
 
 *.out
->>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335
