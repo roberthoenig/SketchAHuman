@@ -1,0 +1,24 @@
+type = "test"
+seed = 123456
+device = "cpu"
+model = "ShapeModelNoDiffusion"
+dataset = "Silhouettes"
+
+[dataset_args]
+dir = "/home/robert/g/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/"
+# n_samples = 10
+sample_spacing = 1
+
+[MeshModel]
+weight_path = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/weight_30/model_epoch0018.weight"
+config_path = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/30_conv_pool.config"
+
+[Model]
+name = "EmbedImageCNN"
+load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_no_diffusion_train/019/checkpoint_5_.pt"
+
+
+[Model.args]
+cond_sz = 63
+freeze_model = true
+freeze_newlayers = true

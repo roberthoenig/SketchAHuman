@@ -43,7 +43,6 @@ class DFAUST(Dataset):
         else:
             raise Exception(f"Unkown type {type}")
         print("Finished init, type=", type)
-
     def __len__(self):
         return self.n_samples
 

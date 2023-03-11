@@ -5,6 +5,7 @@ model = "ShapeModel"
 dataset = "DFAUST"
 
 [dataset_args]
+<<<<<<< HEAD
 latent_shapes_path = "../../../scratch/fpaesde/data/AMASS/test_res_agora.npy"
 silhouettes_path = "../../../scratch/fpaesde/data/AMASS/test_res_silhouettes1.npy"
 train_test_ratio = 0.95
@@ -19,9 +20,30 @@ epochs_per_checkpoint = 30
 in_sz = 153
 cond_sz = 160
 n_steps = 1000
+=======
+latent_shapes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res.npy"
+silhouettes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res_silhouettes.npy"
+train_test_ratio = 0.9
+n_samples = -1
+
+[training]
+batch_sz = 64
+n_epochs = 3000
+epochs_per_checkpoint = 200
+
+[ConditionalModel]
+in_sz = 63
+cond_sz = 64
+n_steps = 100
+# load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_train/018/checkpoint_1_.pt"
+>>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335
 cond_model = "EmbedImageCNN"
 do_cached_lookup = true
 
 [ConditionalModel.cond_model_args]
 freeze_model = true
+<<<<<<< HEAD
 freeze_newlayers = true
+=======
+freeze_newlayers = true
+>>>>>>> 2d4903c479a0e62ab2e03339f9b22ac2fe08a335

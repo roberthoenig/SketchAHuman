@@ -1,0 +1,25 @@
+type = "train"
+seed = 123456
+device = "cpu"
+model = "ShapeModelNoDiffusion"
+dataset = "DFAUST"
+
+[dataset_args]
+latent_shapes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res.npy"
+silhouettes_path = "/home/robert/g/3DHumanGeneration/data/DFAUST/test_res_silhouettes.npy"
+n_samples = -1
+train_test_ratio = 0.9
+
+[training]
+batch_sz = 64
+n_epochs = 2000
+epochs_per_checkpoint = 100
+
+[Model]
+name = "EmbedImageCNN"
+# load_checkpoint = "/home/robert/g/SketchAHuman/experiments/ShapeModel_no_diffusion_train/019/checkpoint_5_.pt"
+
+[Model.args]
+cond_sz = 63
+freeze_model = false
+freeze_newlayers = false
