@@ -34,7 +34,6 @@ class DFAUST(Dataset):
             self.n_samples = n_total_samples - n_train_samples
         else:
             raise Exception(f"Unkown type {type}")
-        print("Finished init, type=", type)
             
     def __len__(self):
         return self.n_samples
