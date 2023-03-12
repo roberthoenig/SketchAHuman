@@ -9,11 +9,11 @@ from torch.utils.data import DataLoader
 
 from models.EmbedImageCNN import EmbedImageCNN
 
-        
 from plyfile import PlyData
 from utils.diffusion_utils import ply_to_png
 # from submodels.3DHumanGeneration.Models import graphAE
 import importlib
+
 Param = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.utils.graphAE_param")
 graphAE = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.Models.graphAE")
 graphAE_dataloader = importlib.import_module("submodules.3DHumanGeneration.code.GraphAE.DataLoader.graphAE_dataloader")
@@ -36,9 +36,9 @@ class ShapeModelNoDiffusion():
             'epoch': self.epoch,
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-            }, path)
+        }, path)
         self.model.to(self.device)
-        
+
     def parallel_to_cpu_state_dict(self, state_dict):
         deparalleled_state_dict = {}
         for k in state_dict.keys():
@@ -56,7 +56,8 @@ class ShapeModelNoDiffusion():
         # Dataset
         if self.config["dataset"] == "DFAUST":
             dataset = DFAUST(**self.config["dataset_args"], type='train')
-            dataloader = DataLoader(dataset, batch_size=self.config["training"]["batch_sz"], shuffle=True, num_workers=0)
+            dataloader = DataLoader(dataset, batch_size=self.config["training"]["batch_sz"], shuffle=True,
+                                    num_workers=0)
             dataset_eval = DFAUST(**self.config["dataset_args"], type='test')
             dataloader_eval = DataLoader(dataset_eval, batch_size=1, shuffle=False, num_workers=0)
         else:
@@ -68,9 +69,9 @@ class ShapeModelNoDiffusion():
         else:
             raise Exception(f'Unkown condition model {self.config["Model"]["name"]}')
         if "load_checkpoint" in self.config["Model"].keys():
-            self.load_model(self.config["Model"]["load_checkpoint"])          
+            self.load_model(self.config["Model"]["load_checkpoint"])
         self.model = self.model.to(self.device)
-        
+
         self.optimizer = optim.Adam(self.model.parameters(), lr=1e-3)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
         loss_fn = torch.nn.MSELoss()
@@ -101,7 +102,7 @@ class ShapeModelNoDiffusion():
             # Log
             pbar.set_postfix({'batch_loss': batch_loss, 'eval_loss': eval_loss})
             logging.info(f"Epoch {self.epoch}, average loss: {batch_loss}, average eval loss: {eval_loss}")
-            if (t+1) % self.config["training"]["epochs_per_checkpoint"] == 0:
+            if (t + 1) % self.config["training"]["epochs_per_checkpoint"] == 0:
                 logging.info(f"Saving checkpoint.")
                 self.save_model()
             self.epoch += 1
@@ -120,7 +121,7 @@ class ShapeModelNoDiffusion():
         else:
             raise Exception(f'Unkown condition model {self.config["Model"]["name"]}')
         if "load_checkpoint" in self.config["Model"].keys():
-            self.load_model(self.config["Model"]["load_checkpoint"])          
+            self.load_model(self.config["Model"]["load_checkpoint"])
         self.model = self.model.to(self.device)
         self.model.eval()
 
@@ -141,7 +142,7 @@ class ShapeModelNoDiffusion():
             print("batch.keys", batch.keys())
             sample = self.model(batch['cond'])
             sample = np.concatenate([s.detach().numpy() for s in sample])
-            sample = sample.reshape(-1, 7, 9)
+            sample = sample.reshape(-1, 17, 9)
 
             sample_torch = torch.FloatTensor(sample).cuda()
 
@@ -152,8 +153,10 @@ class ShapeModelNoDiffusion():
             pc_out = np.array(out_mesh[0].data.tolist())
             # pc_out[:, 1] += 100
             fname = batch['name'][0]
-            graphAE_dataloader.save_pc_into_ply(template_plydata, pc_out, str(self.config["experiment_dir"] / (fname+".ply")))
-            ply_to_png(str(self.config["experiment_dir"] / (fname+".ply")), str(self.config["experiment_dir"] / (fname + "_rendering" + ".png")), silhouette=False)
+            graphAE_dataloader.save_pc_into_ply(template_plydata, pc_out,
+                                                str(self.config["experiment_dir"] / (fname + ".ply")))
+            ply_to_png(str(self.config["experiment_dir"] / (fname + ".ply")),
+                       str(self.config["experiment_dir"] / (fname + "_rendering" + ".png")), silhouette=False)
             v = batch['cond'].squeeze().numpy()
-            im = Image.fromarray(np.uint8(v*255), 'L')
+            im = Image.fromarray(np.uint8(v * 255), 'L')
             im.save(str(self.config["experiment_dir"] / (fname + ".png")))

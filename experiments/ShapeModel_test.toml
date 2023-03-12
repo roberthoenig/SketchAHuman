@@ -5,19 +5,19 @@ model = "ShapeModel"
 dataset = "Silhouettes"
 
 [dataset_args]
-dir = "/home/robert/g/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/"
-# n_samples = 10
+dir = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/diffusion/doodle_images/"
+n_samples = 10
 sample_spacing = 1
 
 [MeshModel]
-weight_path = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/weight_30/model_epoch0018.weight"
+weight_path = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/weight_30/model_epoch0014.weight"
 config_path = "submodules/3DHumanGeneration/train/0422_graphAE_dfaust/30_conv_pool.config"
 
 [ConditionalModel]
-in_sz = 63
+in_sz = 153
 cond_sz = 64
 n_steps = 100
-load_checkpoint = "experiments/ShapeModel_train/018/checkpoint_1_.pt"
+load_checkpoint = "experiments/ShapeModel_train/007/checkpoint_5000_.pt"
 cond_model = "EmbedImageCNN"
 
 [ConditionalModel.cond_model_args]
