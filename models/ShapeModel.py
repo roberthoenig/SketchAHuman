@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from models.EmbedImageCNN import EmbedImageCNN
 from models.ConditionalModel import ConditionalModel
+from models.ConditionalModelBig import ConditionalModelBig
 
 from plyfile import PlyData
 from utils.diffusion_utils import make_beta_schedule, noise_estimation_loss, p_sample_loop, ply_to_png
@@ -92,6 +93,19 @@ class ShapeModel():
         if self.config["ConditionalModel"]["cond_model"] == "EmbedImageCNN":
             cond_model = EmbedImageCNN(self.config["ConditionalModel"]["cond_sz"],
                                        **self.config["ConditionalModel"]["cond_model_args"])
+            self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"],
+                                          in_sz=self.config["ConditionalModel"]["in_sz"],
+                                          cond_sz=self.config["ConditionalModel"]["cond_sz"],
+                                          cond_model=cond_model,
+                                          do_cached_lookup=self.config["ConditionalModel"]["do_cached_lookup"])
+        elif self.config["ConditionalModel"]["cond_model"] == "EmbedImageCNNBig":
+            cond_model = EmbedImageCNN(self.config["ConditionalModel"]["cond_sz"],
+                                       **self.config["ConditionalModel"]["cond_model_args"])
+            self.model = ConditionalModelBig(self.config["ConditionalModel"]["n_steps"],
+                                          in_sz=self.config["ConditionalModel"]["in_sz"],
+                                          cond_sz=self.config["ConditionalModel"]["cond_sz"],
+                                          cond_model=cond_model,
+                                          do_cached_lookup=self.config["ConditionalModel"]["do_cached_lookup"])
         else:
             raise Exception(f'Unkown condition model {self.config["ConditionalModel"]["cond_model"]}')
         self.model = ConditionalModel(self.config["ConditionalModel"]["n_steps"],
@@ -104,7 +118,8 @@ class ShapeModel():
         self.model = self.model.to(self.device)
 
         self.optimizer = optim.AdamW(self.model.parameters(), lr=5e-5)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5)
+        if "use_scheduler" in self.config["ConditionalModel"].keys():
+            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5)
         pbar = tqdm(range(self.config["training"]["n_epochs"]))
         for t in pbar:
             # Train
@@ -137,7 +152,8 @@ class ShapeModel():
             if (t + 1) % self.config["training"]["epochs_per_checkpoint"] == 0:
                 logging.info(f"Saving checkpoint.")
                 self.save_model()
-            self.scheduler.step()
+            if "use_scheduler" in self.config["ConditionalModel"].keys():
+                self.scheduler.step()
             self.epoch += 1
 
     def test(self):
