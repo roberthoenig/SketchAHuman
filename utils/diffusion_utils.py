@@ -19,7 +19,7 @@ def ply_to_png(ply_filename, png_filename, silhouette=False):
     mesh = pyrender.Mesh.from_trimesh(mesh, smooth=False)
     scene = pyrender.Scene(ambient_light=[.1, .1, .3], bg_color=[0, 0, 0])
     camera = pyrender.PerspectiveCamera( yfov=np.pi / 3.0)
-    light = pyrender.DirectionalLight(color=[1,1,1], intensity=2e3)
+    light = pyrender.DirectionalLight(color=[1,1,1], intensity=5e2)
     scene.add(mesh, pose=  np.eye(4))
     scene.add(light, pose=  np.eye(4))
     scene.add(camera, pose=[[ 1,  0,  0,  0],
@@ -29,6 +29,7 @@ def ply_to_png(ply_filename, png_filename, silhouette=False):
     # render scene
     r = pyrender.OffscreenRenderer(512, 512)
     color, _ = r.render(scene)
+    color = 255 - color
     if silhouette:
         color = (255 * (color > 0)).astype(np.uint8)
     img = Image.fromarray(color)
@@ -92,21 +93,21 @@ def get_faces_from_ply(ply):
     return faces
 
 
-def p_sample_loop(n_steps, model, shape, alphas, one_minus_alphas_bar_sqrt, betas, cond):
+def p_sample_loop(n_steps, model, shape, alphas, one_minus_alphas_bar_sqrt, betas, cond, idx):
     cur_x = torch.randn(shape)
     x_seq = [cur_x]
     for i in reversed(range(n_steps)):
-        cur_x = p_sample(model, cur_x, i, alphas, one_minus_alphas_bar_sqrt, betas, cond)
+        cur_x = p_sample(model, cur_x, i, alphas, one_minus_alphas_bar_sqrt, betas, cond, idx)
         x_seq.append(cur_x)
     return x_seq
 
 
-def p_sample(model, x, t, alphas, one_minus_alphas_bar_sqrt, betas, cond):
+def p_sample(model, x, t, alphas, one_minus_alphas_bar_sqrt, betas, cond, idx):
     t = torch.tensor([t])
     # Factor to the model output
     eps_factor = ((1 - extract(alphas, t, x.shape)) / extract(one_minus_alphas_bar_sqrt, t, x.shape))
     # Model output
-    eps_theta = model(x, t, cond=cond)
+    eps_theta = model(x, t, cond=cond, idx=idx)
     # Final values
     mean = (1 / extract(alphas, t, x.shape).sqrt()) * (x - (eps_factor * eps_theta))
     # Generate z

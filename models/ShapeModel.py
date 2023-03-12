@@ -112,14 +112,19 @@ class ShapeModel():
                 losses.append(loss.detach().item())
             batch_loss = np.array(losses).mean()
             # Eval
-            losses_eval = []
-            for batch in dataloader_eval:
-                batch_x = batch['x'].to(self.device)
-                cond_x = batch['cond'].float().to(self.device)
-                with torch.no_grad():
-                    loss = noise_estimation_loss(self.model, batch_x, alphas_bar_sqrt, one_minus_alphas_bar_sqrt, self.config["ConditionalModel"]["n_steps"], self.device, cond=cond_x, idx=batch['idx'])
-                losses_eval.append(loss.detach().item())
-            eval_loss = np.array(losses_eval).mean()
+            loss_fn = torch.nn.MSELoss()
+            eval_loss = -1
+            if (t+1) % self.config["training"]["epochs_per_eval"] == 0:
+                losses_eval = []
+                for batch in dataloader_eval:
+                    batch_x = batch['x'].to(self.device)
+                    cond_x = batch['cond'].float().to(self.device)
+                    with torch.no_grad():
+                        y = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 63], alphas, one_minus_alphas_bar_sqrt, betas, batch['cond'], idx=batch['idx'])
+                        y = y[-1]
+                        loss = loss_fn(batch_x, y)
+                    losses_eval.append(loss.detach().item())
+                eval_loss = np.array(losses_eval).mean()
             pbar.set_postfix({'batch_loss': batch_loss, 'eval_loss': eval_loss})
             logging.info(f"Epoch {self.epoch}, average loss: {batch_loss}, average eval loss: {eval_loss}")
             if (t+1) % self.config["training"]["epochs_per_checkpoint"] == 0:
@@ -170,7 +175,7 @@ class ShapeModel():
 
         for batch in dataloader:
             assert self.config["ConditionalModel"]["in_sz"] == 63
-            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 63], alphas, one_minus_alphas_bar_sqrt, betas, batch['cond'])
+            sample = p_sample_loop(self.config["ConditionalModel"]["n_steps"], self.model, [1, 63], alphas, one_minus_alphas_bar_sqrt, betas, batch['cond'], idx=batch['name'])
             sample = np.concatenate([s.detach().numpy() for s in sample])
             sample = sample.reshape(-1, 7, 9)
 
