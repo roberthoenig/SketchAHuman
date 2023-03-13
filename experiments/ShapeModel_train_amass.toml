@@ -1,6 +1,6 @@
 type = "train"
 seed = 123456
-device = 'cuda'
+device = 'cpu'
 model = "ShapeModel"
 dataset = "AMASS"
 
